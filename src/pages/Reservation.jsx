@@ -12,22 +12,39 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 dayjs.locale("es");
 
-import { getReservationOptions } from "../services/reservation.js";
+import { getReservationOptions as getOptions } from "../services/reservation.js";
 import { useCart } from "../context/CartContext.jsx"; 
 
 const steps = ["Datos de reservación", "Paquetes", "Personalización", "Resumen"];
 const SALON_BASE_PRICE = 3000;
 
+const bufferToDataUrl = (buffer) => {
+  if (!buffer || !buffer.data) {
+    return "https://via.placeholder.com/150?text=No+Imagen";
+  }
+  
+  let binary = '';
+  const bytes = new Uint8Array(buffer.data);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64String = btoa(binary);
+  return `data:image/png;base64,${base64String}`;
+};
+
 const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
   const { addReservationToCart } = useCart(); 
   const [activeStep, setActiveStep] = useState(0);
-  const [options, setOptions] = useState({ packages: [], snacks: [], music: [] });
+  const [options, setOptions] = useState({ packages: [], snacks: [], music: [], drinks: [] });
   const [occupiedDates, setOccupiedDates] = useState([]); 
   const [formData, setFormData] = useState({
     nombre: "", apellidos: "", telefono: "", ine: null, fecha: null, horaInicio: null, horaFin: null,
   });
   const [selections, setSelections] = useState({
-    packageId: null, snackIds: {}, musicIds: [],
+    packageId: null,
+    addons: {}, 
+    musicIds: [],
   });
   const [totalPrice, setTotalPrice] = useState(SALON_BASE_PRICE);
 
@@ -35,11 +52,12 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
     if (isOpen) {
       const loadOptions = async () => {
         try {
-          const res = await getReservationOptions();
+          const res = await getOptions();
           setOptions({
             packages: res.data.packages || [],
             snacks: res.data.snacks || [],
             music: res.data.music || [],
+            drinks: res.data.drinks || [],
           });
         } catch (error) { console.error("Error al cargar las opciones:", error); }
       };
@@ -49,19 +67,26 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
 
   useEffect(() => {
     let total = SALON_BASE_PRICE;
-    const allItems = [...options.packages, ...options.snacks, ...options.music];
+    const allItems = [
+      ...(options.packages || []), ...(options.snacks || []),
+      ...(options.music || []), ...(options.drinks || [])
+    ];
+    
     if (selections.packageId) {
       const item = allItems.find(p => p.id === selections.packageId);
       if (item) total += parseFloat(item.price);
     }
-    Object.entries(selections.snackIds).forEach(([id, qty]) => {
+    
+    Object.entries(selections.addons).forEach(([id, qty]) => {
       const item = allItems.find(s => s.id == id);
       if (item) total += parseFloat(item.price) * qty;
     });
-    selections.musicIds.forEach(id => {
-      const item = allItems.find(m => m.id === id);
+
+    selections.musicIds.forEach(musicId => {
+      const item = allItems.find(m => m.id === musicId);
       if (item) total += parseFloat(item.price);
     });
+
     setTotalPrice(total);
   }, [selections, options]);
 
@@ -69,11 +94,8 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData({ ...formData, ine: e.target.files[0] });
-    }
-  };
+  const handleFileChange = (e) => setFormData({ ...formData, ine: e.target.files?.[0] || null });
+
   const handleDateChange = (date) => {
     if (!date) return;
     const start = date.toDate();
@@ -82,28 +104,33 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
   };
   const isDateDisabled = (date) => occupiedDates.some((d) => dayjs(d).isSame(date, "day"));
 
-  const handleQuantityChange = (item, delta) => {
-    const isPackage = options.packages.some(p => p.id === item.id);
+  const handleQuantityChange = (item, delta, isPackage = false) => {
     if (isPackage) {
       setSelections(prev => ({ ...prev, packageId: prev.packageId === item.id && delta < 0 ? null : item.id }));
-      return;
+    } else {
+      setSelections(prev => {
+        const currentQty = prev.addons[item.id] || 0;
+        const newQty = Math.max(0, currentQty + delta);
+        const newAddons = { ...prev.addons };
+        if (newQty === 0) {
+          delete newAddons[item.id];
+        } else {
+          newAddons[item.id] = newQty;
+        }
+        return { ...prev, addons: newAddons };
+      });
     }
-    setSelections(prev => {
-      const currentQty = prev.snackIds[item.id] || 0;
-      const newQty = Math.max(0, currentQty + delta);
-      const newSnackIds = { ...prev.snackIds };
-      if (newQty === 0) delete newSnackIds[item.id];
-      else newSnackIds[item.id] = newQty;
-      return { ...prev, snackIds: newSnackIds };
-    });
   };
-  
+
   const handleMusicSelection = (musicId) => {
     setSelections(prev => {
       const newMusicIds = [...prev.musicIds];
       const index = newMusicIds.indexOf(musicId);
-      if (index > -1) newMusicIds.splice(index, 1);
-      else newMusicIds.push(musicId);
+      if (index > -1) {
+        newMusicIds.splice(index, 1); 
+      } else {
+        newMusicIds.push(musicId); 
+      }
       return { ...prev, musicIds: newMusicIds };
     });
   };
@@ -199,9 +226,8 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
                         value={formData.fecha} 
                         onChange={handleDateChange} 
                         shouldDisableDate={isDateDisabled}
-                        // ✨ AQUÍ ESTÁ LA RESTRICCIÓN DE HORARIO ✨
-                        minTime={dayjs().hour(8).minute(0)}  // Hora mínima: 8:00 AM
-                        maxTime={dayjs().hour(16).minute(0)} // Hora máxima: 4:00 PM
+                        minTime={dayjs().hour(8).minute(0)}  
+                        maxTime={dayjs().hour(16).minute(0)} 
                       />
                     </LocalizationProvider>
                     {formData.horaInicio && (<p className="mt-2 text-gray-600 text-lg">Inicio: {formData.horaInicio.toLocaleTimeString()} | Fin: {formData.horaFin.toLocaleTimeString()}</p>)}
@@ -211,28 +237,116 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
               </Card>
             )}
             {activeStep === 1 && (
-                 <Card className="shadow-lg rounded-2xl">
-                 <CardContent>
-                   <Grid container spacing={3} className="mt-3">
-                     {options.packages.map((item) => (
-                       <Grid item xs={12} sm={4} key={item.id}><Card className="p-3 shadow-sm border border-gray-200 rounded-xl"><Typography className="font-bold text-gray-800">{item.name}</Typography><Typography className="text-green-700 font-semibold mt-1">${item.price} MXN</Typography><Box className="flex items-center justify-between mt-2"><IconButton onClick={() => handleQuantityChange(item, -1)}><Minus size={18}/></IconButton><span>{selections.packageId === item.id ? 1 : 0}</span><IconButton onClick={() => handleQuantityChange(item, 1)}><Plus size={18}/></IconButton></Box></Card></Grid>
-                     ))}
-                   </Grid>
-                 </CardContent>
-                 <CardActions className="justify-between"><Button onClick={handleBack}>Atrás</Button><Button variant="contained" onClick={handleNext} style={{ backgroundColor: "#A96E4A" }}>Siguiente</Button></CardActions>
-               </Card>
-            )}
-            {activeStep === 2 && (
-                <Card className="rounded-2xl shadow-lg">
+              <Card className="shadow-lg rounded-2xl bg-transparent">
                 <CardContent>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6}><Typography className="mb-2 font-semibold text-amber-900">Botanas y Bebidas</Typography>{options.snacks.map((item) => (<Card key={item.id} className="min-h-25 py-2 px-1 mb-2 border border-amber-300 rounded-lg flex justify-between items-center"><Typography className="font-medium ml-2">{item.name}</Typography><Box className="flex items-center justify-between"><IconButton onClick={() => handleQuantityChange(item, -1)}><Minus size={16}/></IconButton><span>{selections.snackIds[item.id] || 0}</span><IconButton onClick={() => handleQuantityChange(item, 1)}><Plus size={16}/></IconButton></Box></Card>))}</Grid>
-                    <Grid item xs={12} sm={6}><Typography className="mb-2 font-semibold text-amber-900">Música</Typography>{options.music.map((item) => { const isSelected = selections.musicIds.includes(item.id); return (<Card key={item.id} onClick={() => handleMusicSelection(item.id)} className={`min-h-25 py-2 px-1 mb-2 border rounded-lg flex justify-between items-center cursor-pointer relative ${isSelected ? 'border-2 border-green-500 bg-green-50' : 'border-amber-300'}`}><Typography className="font-medium ml-2">{item.name}</Typography>{isSelected && <CheckCircle className="text-green-500 mr-2"/>}</Card>);})}</Grid>
+                  <Typography className="text-center font-bold text-xl text-amber-900 mb-4">Paquetes Predeterminados</Typography>
+                  <Grid container spacing={4} justifyContent="center">
+                    {options.packages.map((item) => (
+                      <Grid item xs={12} sm={6} md={4} key={item.id}>
+                        <Card className="p-3 shadow-md border border-gray-200 rounded-xl h-full flex flex-col text-center">
+                          <img src={bufferToDataUrl(item.image)} alt={item.name} className="w-full h-40 object-contain rounded-lg mb-2" />
+                          <CardContent className="flex-grow p-1">
+                            <Typography className="font-bold text-gray-800 text-lg">{item.name}</Typography>
+                            <Typography variant="body2" color="text.secondary" className="my-1">{item.description}</Typography>
+                            <Typography className="text-green-700 font-semibold mt-1 text-lg">${item.price} MXN</Typography>
+                          </CardContent>
+                          <CardActions className="justify-center p-0">
+                            <IconButton onClick={() => handleQuantityChange(item, -1, true)}><Minus size={18}/></IconButton>
+                            <span className="font-bold text-xl mx-3">{selections.packageId === item.id ? 1 : 0}</span>
+                            <IconButton onClick={() => handleQuantityChange(item, 1, true)}><Plus size={18}/></IconButton>
+                          </CardActions>
+                        </Card>
+                      </Grid>
+                    ))}
                   </Grid>
                 </CardContent>
-                <CardActions className="justify-between"><Button onClick={handleBack}>Atrás</Button><Button variant="contained" onClick={handleNext} style={{ backgroundColor: "#A96E4A" }}>Siguiente</Button></CardActions>
+                <CardActions className="justify-between px-4 pb-4"><Button onClick={handleBack}>Atrás</Button><Button variant="contained" onClick={handleNext} style={{ backgroundColor: "#A96E4A" }}>Siguiente</Button></CardActions>
               </Card>
             )}
+
+            {activeStep === 2 && (
+            <Card className="rounded-2xl shadow-lg bg-transparent">
+              <CardContent>
+                <h3 className="text-center font-bold text-xl text-amber-800 mb-4">
+                  Personaliza tu experiencia
+                </h3>
+                <Grid container spacing={3}>
+                  {[
+                    { title: "Botanas", data: options.snacks },
+                    { title: "Bebidas", data: options.drinks },
+                    { title: "Música", data: options.music },
+                  ].map((category) => (
+                    <Grid item xs={12} sm={6} md={4} key={category.title}>
+                      <Typography className="mb-2 font-semibold text-amber-900 text-lg">
+                        {category.title}
+                      </Typography>
+                      {(category.data || []).map((item) => (
+                        <Card
+                          key={item.id}
+                          className="p-2 mb-3 border border-amber-300 rounded-lg flex items-center"
+                        >
+                          {/* ✨ Contenedor de la imagen con tamaño fijo para que no se encoja */}
+                          <Box className="flex-shrink-0 mr-3">
+                            <img
+                              src={bufferToDataUrl(item.image)}
+                              alt={item.name}
+                              className="w-16 h-16 object-contain rounded-md"
+                            />
+                          </Box>
+                          
+                          {/* ✨ Contenedor principal para texto y controles */}
+                          <Box className="flex-grow flex flex-col justify-between min-w-0">
+                            
+                            {/* ✨ Contenedor para el texto */}
+                            <Box className="min-w-0">
+                              <Typography 
+                                className="font-medium truncate" // 'truncate' evita que el texto se desborde
+                                title={item.name} // Muestra el nombre completo al pasar el mouse
+                              >
+                                {item.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                ${item.price} MXN
+                              </Typography>
+                            </Box>
+
+                            {/* ✨ Contenedor para los controles, alineado a la derecha */}
+                            <Box className="flex items-center self-end">
+                              <IconButton
+                                onClick={() => handleQuantityChange(item, -1)}
+                                size="small"
+                              >
+                                <Minus size={16} />
+                              </IconButton>
+                              <span className="font-bold mx-1 w-4 text-center">
+                                {selections.addons[item.id] || 0}
+                              </span>
+                              <IconButton
+                                onClick={() => handleQuantityChange(item, 1)}
+                                size="small"
+                              >
+                                <Plus size={16} />
+                              </IconButton>
+                            </Box>
+                          </Box>
+                        </Card>
+                      ))}
+                    </Grid>
+                  ))}
+                </Grid>
+              </CardContent>
+              <CardActions className="justify-between px-4 pb-4">
+                <Button onClick={handleBack}>Atrás</Button>
+                <Button
+                  variant="contained"
+                  onClick={handleNext}
+                  style={{ backgroundColor: "#A96E4A" }}
+                >
+                  Siguiente
+                </Button>
+              </CardActions>
+            </Card>
+          )}
             {activeStep === 3 && (
                  <Card className="shadow-lg rounded-2xl">
                  <CardContent>
