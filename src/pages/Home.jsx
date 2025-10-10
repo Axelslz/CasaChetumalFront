@@ -21,10 +21,9 @@ import {
   PartyPopper,
   ShoppingCart,
 } from "lucide-react";
-import { useCart } from "../context/CartContext.jsx"; // ✨ 1. Importamos el hook del carrito
+import { useCart } from "../context/CartContext.jsx" 
 
 const CasaChetumal = () => {
-  // --- TU LÓGICA DE ESTADOS ORIGINAL (INTACTA) ---
   const [currentVideo, setCurrentVideo] = useState(0);
   const [playingVideo, setPlayingVideo] = useState(null);
   const [showReservationModal, setShowReservationModal] = useState(false);
@@ -34,20 +33,14 @@ const CasaChetumal = () => {
   const [paymentData, setPaymentData] = useState(null);
   const navigate = useNavigate();
 
-  // --- CONEXIÓN CON EL CART CONTEXT ---
-  const { pendingReservation, clearCart } = useCart(); // ✨ 2. Usamos el contexto para leer y limpiar el carrito
-
-  // --- TUS FUNCIONES HANDLE ADAPTADAS ---
+  const { pendingReservation, clearCart } = useCart(); 
   
   const handleCartClick = () => {
     setIsCartOpen(true);
   };
 
-  // ✨ 3. Esta función ahora prepara los datos del CONTEXTO para la vista de pago
   const handleProceedToPayment = () => {
     if (pendingReservation) {
-      // Tomamos la información completa del carrito del contexto
-      // y la ponemos en tu estado local 'paymentData' para pasarla como prop.
       setPaymentData(pendingReservation); 
       setIsCartOpen(false);
       setShowPayment(true);
@@ -61,7 +54,6 @@ const CasaChetumal = () => {
     setIsCartOpen(true);
   };
 
-  // ✨ 4. Esta función ahora limpia el CONTEXTO del carrito
   const handlePaymentSuccess = () => {
     clearCart(); 
     setShowPayment(false);
@@ -69,7 +61,6 @@ const CasaChetumal = () => {
     navigate("/");
   };
   
-  // --- LÓGICA DE LA PÁGINA (SIN CAMBIOS) ---
   const videos = [
     {
       id: 1,
@@ -127,18 +118,15 @@ const CasaChetumal = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // --- ✨ TU DISEÑO Y LÓGICA DE RENDERIZADO ORIGINAL (INTACTA) ---
   return (
     <>
       {showPayment && paymentData ? (
-        // Muestra SOLO el componente de pago cuando 'showPayment' es true
        <PaymentMethod
           cartData={paymentData}
           onBack={handleBackToCart}
           onSuccess={handlePaymentSuccess}
         />
       ) : (
-        // Muestra TODA tu página principal cuando 'showPayment' es false
         <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
           <NavbarHome
             isMobileMenuOpen={isMobileMenuOpen}

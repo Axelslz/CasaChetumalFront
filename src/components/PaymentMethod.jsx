@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import ReservationAlert from "./ReservationAlert.jsx";
 import PaymentSuccessAlert from "./PaymentAlert.jsx";
-import { useCart } from "../context/CartContext.jsx"; // ✨ 1. Importa el hook del carrito
+import { useCart } from "../context/CartContext.jsx";
 import { Smartphone, Banknote } from "lucide-react";
 import dayjs from "dayjs";
 
-// ✨ 2. Ya no recibe 'cartData' como prop, solo 'onBack' y 'onSuccess'
 const PaymentMethod = ({ onBack, onSuccess }) => {
-  const { pendingReservation, processPaymentAndCreateReservation } = useCart(); // ✨ 3. Usa el contexto para obtener los datos
+  const { pendingReservation, processPaymentAndCreateReservation } = useCart();
   
   const [selectedMethod, setSelectedMethod] = useState("");
   const [formData, setFormData] = useState({ firstName: "", lastName: "", receipt: null });
@@ -15,7 +14,6 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [showReservationSuccess, setShowReservationSuccess] = useState(false);
 
-  // ✨ 4. Lógica para tus reglas de negocio (usa 'pendingReservation' del contexto)
   useEffect(() => {
     if (pendingReservation?.summary?.fecha) {
       const eventDate = dayjs(pendingReservation.summary.fecha, "DD/MM/YYYY");
@@ -44,7 +42,6 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
     if (selectedMethod === "transfer" && !formData.receipt) return alert("Por favor sube el comprobante de transferencia");
 
     try {
-      // ✨ 5. Llama a la función del contexto que ejecuta la petición al backend
       await processPaymentAndCreateReservation();
       setShowPaymentSuccess(true);
     } catch (error) {
@@ -59,13 +56,14 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
   
   const handleFinalClose = () => {
     setShowReservationSuccess(false);
-    onSuccess(); // Llama a la función de Home.jsx para limpiar todo
+    onSuccess();
   };
   
-  // ✨ 6. Extraemos los datos del contexto para usarlos en el JSX
   const { summary, allOptions } = pendingReservation || {};
-  const { packages = [], snacks = [], music = [] } = allOptions || {};
+  const { packages = [], snacks = [], music = [], drinks = [] } = allOptions || {};
   const SALON_BASE_PRICE = 3000;
+
+  const allAddons = [...snacks, ...drinks];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 py-6 px-4">
@@ -79,7 +77,6 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
           <p className="text-amber-600">Verifica tu pedido y selecciona una forma de pago</p>
         </div>
 
-        {/* --- ✨ RESUMEN DE COMPRA DETALLADO (USA DATOS DEL CONTEXTO) --- */}
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             Resumen de tu compra
@@ -100,23 +97,28 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Fila para la Renta del Salón */}
                   <tr className="border-t">
                     <td className="py-2">Renta del Salón</td>
                     <td className="text-center">1</td>
                     <td className="text-right">${SALON_BASE_PRICE.toFixed(2)}</td>
                   </tr>
-                  {/* Paquete */}
                   {summary.packageId && (() => {
                     const item = packages.find(p => p.id === summary.packageId);
                     return item ? (<tr key={`pkg-${item.id}`} className="border-t"><td className="py-2">{item.name}</td><td className="text-center">1</td><td className="text-right">${item.price}</td></tr>) : null;
                   })()}
-                  {/* Snacks */}
-                  {Object.entries(summary.snackIds).map(([id, qty]) => {
-                    const item = snacks.find(s => s.id == id);
-                    return item ? (<tr key={`snack-${item.id}`} className="border-t"><td className="py-2">{item.name}</td><td className="text-center">{qty}</td><td className="text-right">${(item.price * qty).toFixed(2)}</td></tr>) : null;
+                  
+                  {/* MODIFICACIÓN 3: Lógica corregida para iterar sobre 'addons' y buscar en la lista combinada */}
+                  {summary.addons && Object.entries(summary.addons).map(([id, qty]) => {
+                    const item = allAddons.find(addon => addon.id == id);
+                    return item ? (
+                      <tr key={`addon-${item.id}`} className="border-t">
+                        <td className="py-2">{item.name}</td>
+                        <td className="text-center">{qty}</td>
+                        <td className="text-right">${(item.price * qty).toFixed(2)}</td>
+                      </tr>
+                    ) : null;
                   })}
-                  {/* Música */}
+                  
                   {summary.musicIds.map(id => {
                     const item = music.find(m => m.id === id);
                     return item ? (<tr key={`music-${item.id}`} className="border-t"><td className="py-2">{item.name}</td><td className="text-center">1</td><td className="text-right">${item.price}</td></tr>) : null;
@@ -132,7 +134,7 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
           ) : ( <p>No hay información de la compra. Por favor, vuelve a iniciar el proceso.</p> )}
         </div>
         
-        {/* --- OPCIONES DE PAGO Y FORMULARIOS (Tu JSX original) --- */}
+        {/* --- El resto del componente de pago (sin cambios) --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div onClick={() => setSelectedMethod("transfer")} className={`bg-white rounded-2xl shadow-xl p-6 cursor-pointer border-2 transition-all ${selectedMethod === "transfer" ? "border-amber-500 ring-4 ring-amber-200" : "border-transparent hover:border-amber-300"}`}>
             <div className="flex items-center mb-4">
@@ -167,7 +169,7 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
                   <h4 className="font-semibold text-gray-800 mb-3">Datos para transferencia:</h4>
                   <div className="space-y-2 text-sm">
                     <p><span className="font-medium">Banco:</span> BBVA Bancomer</p>
-                    <p><span className="font-medium">Titular:</span> [Nombre del Negocio]</p>
+                    <p><span className="font-medium">Titular:</span> Uri Jair Gallegos Gonzales</p>
                     <p><span className="font-medium">Número de cuenta:</span> 0123456789012345</p>
                     <p><span className="font-medium">CLABE:</span> 012180001234567890</p>
                   </div>
@@ -177,7 +179,7 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-blue-800 mb-2">Instrucciones importantes:</h3>
                       <div className="text-xs text-blue-700 space-y-1">
-                        <p>• Concepto: "Evento - {summary?.cliente}"</p>
+                        <p>• Concepto: "Dia Evento - Nombre del que reservo"</p>
                         <p>• Sube foto clara del comprobante</p>
                       </div>
                     </div>

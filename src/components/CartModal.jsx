@@ -7,7 +7,9 @@ const CartModal = ({ isOpen, onClose, onProceedToPayment }) => {
   if (!isOpen) return null;
 
   const { summary, allOptions } = pendingReservation || {};
-  const { packages = [], snacks = [], music = [] } = allOptions || {};
+  
+  const { packages = [], snacks = [], music = [], drinks = [] } = allOptions || {};
+  const allAddons = [...snacks, ...drinks];
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -42,9 +44,15 @@ const CartModal = ({ isOpen, onClose, onProceedToPayment }) => {
                   const item = packages.find(p => p.id === summary.packageId);
                   return item ? (<tr key={item.id} className="border-t"><td className="py-1">{item.name}</td><td className="text-center">1</td><td className="text-right">${item.price}</td></tr>) : null;
                 })()}
-                {Object.entries(summary.snackIds).map(([id, qty]) => {
-                  const item = snacks.find(s => s.id == id);
-                  return item ? (<tr key={item.id} className="border-t"><td className="py-1">{item.name}</td><td className="text-center">{qty}</td><td className="text-right">${(item.price * qty).toFixed(2)}</td></tr>) : null;
+                {summary.addons && Object.entries(summary.addons).map(([id, qty]) => {
+                  const item = allAddons.find(addon => addon.id == id); 
+                  return item ? (
+                    <tr key={item.id} className="border-t">
+                      <td className="py-1">{item.name}</td>
+                      <td className="text-center">{qty}</td>
+                      <td className="text-right">${(item.price * qty).toFixed(2)}</td>
+                    </tr>
+                  ) : null;
                 })}
                 {summary.musicIds.map(id => {
                   const item = music.find(m => m.id === id);
@@ -65,7 +73,7 @@ const CartModal = ({ isOpen, onClose, onProceedToPayment }) => {
           disabled={!pendingReservation}
           className="mt-6 w-full bg-amber-700 text-white py-2 rounded-lg text-lg font-semibold hover:bg-amber-800 disabled:bg-gray-400"
         >
-          Pagar y Confirmar
+          Pagar
         </button>
       </div>
     </div>

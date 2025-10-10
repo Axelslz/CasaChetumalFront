@@ -12,17 +12,15 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 dayjs.locale("es");
 
-import { getReservationOptions as getOptions } from "../services/reservation.js";
+import { getReservationOptions as getOptions, calculateTotalRequest } from "../services/reservation.js";
 import { useCart } from "../context/CartContext.jsx"; 
 
 const steps = ["Datos de reservación", "Paquetes", "Personalización", "Resumen"];
-const SALON_BASE_PRICE = 3000;
 
 const bufferToDataUrl = (buffer) => {
   if (!buffer || !buffer.data) {
     return "https://via.placeholder.com/150?text=No+Imagen";
   }
-  
   let binary = '';
   const bytes = new Uint8Array(buffer.data);
   const len = bytes.byteLength;
@@ -46,49 +44,53 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
     addons: {}, 
     musicIds: [],
   });
-  const [totalPrice, setTotalPrice] = useState(SALON_BASE_PRICE);
+ 
+  const [totalPrice, setTotalPrice] = useState(3000);
 
-  useEffect(() => {
+   useEffect(() => {
     if (isOpen) {
-      const loadOptions = async () => {
+      const loadInitialData = async () => {
         try {
-          const res = await getOptions();
+          const optionsRes = await getOptions();
           setOptions({
-            packages: res.data.packages || [],
-            snacks: res.data.snacks || [],
-            music: res.data.music || [],
-            drinks: res.data.drinks || [],
+            packages: optionsRes.data.packages || [],
+            snacks: optionsRes.data.snacks || [],
+            music: optionsRes.data.music || [],
+            drinks: optionsRes.data.drinks || [],
           });
-        } catch (error) { console.error("Error al cargar las opciones:", error); }
+
+          const datesRes = await getOccupiedDatesRequest();
+          setOccupiedDates(datesRes.data); 
+
+        } catch (error) { 
+          console.error("Error al cargar datos iniciales del modal:", error); 
+        }
       };
-      loadOptions();
+      loadInitialData();
     }
   }, [isOpen]);
 
   useEffect(() => {
-    let total = SALON_BASE_PRICE;
-    const allItems = [
-      ...(options.packages || []), ...(options.snacks || []),
-      ...(options.music || []), ...(options.drinks || [])
-    ];
-    
-    if (selections.packageId) {
-      const item = allItems.find(p => p.id === selections.packageId);
-      if (item) total += parseFloat(item.price);
+   
+    if (options.snacks.length === 0 && options.music.length === 0 && options.drinks.length === 0) {
+      return;
     }
     
-    Object.entries(selections.addons).forEach(([id, qty]) => {
-      const item = allItems.find(s => s.id == id);
-      if (item) total += parseFloat(item.price) * qty;
-    });
+    const handler = setTimeout(async () => {
+      try {
+        const response = await calculateTotalRequest(selections);
+        setTotalPrice(response.data.total);
+      } catch (error) {
+        console.error("Error al calcular el total desde el backend:", error);
+      }
+    }, 500); 
 
-    selections.musicIds.forEach(musicId => {
-      const item = allItems.find(m => m.id === musicId);
-      if (item) total += parseFloat(item.price);
-    });
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [selections, options]); 
+  
 
-    setTotalPrice(total);
-  }, [selections, options]);
 
   if (!isOpen) return null;
 
@@ -135,7 +137,7 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
     });
   };
 
-  const handleAddToCart = () => {
+   const handleAddToCart = () => {
     const { nombre, apellidos, telefono, fecha, ine } = formData;
     if (!nombre || !apellidos || !telefono || !fecha) {
       alert("Por favor, completa los campos requeridos del primer paso.");
@@ -153,18 +155,26 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
     dataToSend.append('totalPrice', totalPrice);
     dataToSend.append('paymentMethod', 'transfer'); 
     if (selections.packageId) dataToSend.append('packageId', selections.packageId);
-    Object.keys(selections.snackIds).forEach(id => dataToSend.append('snackIds', id));
+
+    const snackIdsSet = new Set(options.snacks.map(s => s.id.toString()));
+
+    Object.keys(selections.addons).forEach(id => {
+      if (snackIdsSet.has(id)) {
+        dataToSend.append('snackIds', id);
+      }
+    });
+
     selections.musicIds.forEach(id => dataToSend.append('musicIds', id));
 
    const reservationSummary = {
-        cliente: `${nombre} ${apellidos}`,
-        fecha: dayjs(fecha).format('DD/MM/YYYY'),
-        hora: dayjs(formData.horaInicio).format('hh:mm A'),
-        total: totalPrice,
-        packageId: selections.packageId,
-        snackIds: selections.snackIds,
-        musicIds: selections.musicIds,
-    };
+    cliente: `${nombre} ${apellidos}`,
+    fecha: dayjs(fecha).format('DD/MM/YYYY'),
+    hora: dayjs(formData.horaInicio).format('hh:mm A'),
+    total: totalPrice,
+    packageId: selections.packageId,
+    addons: selections.addons, 
+    musicIds: selections.musicIds,
+};
  
     addReservationToCart({ dataToSend, summary: reservationSummary, allOptions: options });
     
@@ -190,7 +200,7 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
               </div>
               <div className="ml-3 flex-grow text-center">
                 <h3 className="text-md font-medium text-blue-800">
-                  {activeStep === 0 && `La renta del salón tiene un costo base de $${SALON_BASE_PRICE}. Ingresa tus datos y selecciona fecha y hora (horario admitido: 8:00 AM a 4:00 PM).`}
+                  {activeStep === 0 && `La renta del salón tiene un costo base de $3000. Ingresa tus datos y selecciona fecha y hora (horario admitido: 8:00 AM a 4:00 PM).`}
                   {activeStep === 1 && "Puedes elegir un paquete o pasar al siguiente paso para personalizar tu experiencia."}
                   {activeStep === 2 && "¡Ármate con lo que necesites para tu evento!"}
                   {activeStep === 3 && "Revisa tu selección final antes de añadir al carrito."}
@@ -263,90 +273,98 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
                 <CardActions className="justify-between px-4 pb-4"><Button onClick={handleBack}>Atrás</Button><Button variant="contained" onClick={handleNext} style={{ backgroundColor: "#A96E4A" }}>Siguiente</Button></CardActions>
               </Card>
             )}
-
             {activeStep === 2 && (
             <Card className="rounded-2xl shadow-lg bg-transparent">
-              <CardContent>
+                <CardContent>
                 <h3 className="text-center font-bold text-xl text-amber-800 mb-4">
-                  Personaliza tu experiencia
+                    Personaliza tu experiencia
                 </h3>
                 <Grid container spacing={3}>
-                  {[
+                    {[
                     { title: "Botanas", data: options.snacks },
                     { title: "Bebidas", data: options.drinks },
                     { title: "Música", data: options.music },
-                  ].map((category) => (
+                    ].map((category) => (
                     <Grid item xs={12} sm={6} md={4} key={category.title}>
-                      <Typography className="mb-2 font-semibold text-amber-900 text-lg">
+                        <Typography className="mb-2 font-semibold text-amber-900 text-lg">
                         {category.title}
-                      </Typography>
-                      {(category.data || []).map((item) => (
-                        <Card
-                          key={item.id}
-                          className="p-2 mb-3 border border-amber-300 rounded-lg flex items-center"
-                        >
-                          {/* ✨ Contenedor de la imagen con tamaño fijo para que no se encoja */}
-                          <Box className="flex-shrink-0 mr-3">
-                            <img
-                              src={bufferToDataUrl(item.image)}
-                              alt={item.name}
-                              className="w-16 h-16 object-contain rounded-md"
-                            />
-                          </Box>
-                          
-                          {/* ✨ Contenedor principal para texto y controles */}
-                          <Box className="flex-grow flex flex-col justify-between min-w-0">
-                            
-                            {/* ✨ Contenedor para el texto */}
-                            <Box className="min-w-0">
-                              <Typography 
-                                className="font-medium truncate" // 'truncate' evita que el texto se desborde
-                                title={item.name} // Muestra el nombre completo al pasar el mouse
-                              >
-                                {item.name}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                ${item.price} MXN
-                              </Typography>
-                            </Box>
-
-                            {/* ✨ Contenedor para los controles, alineado a la derecha */}
-                            <Box className="flex items-center self-end">
-                              <IconButton
-                                onClick={() => handleQuantityChange(item, -1)}
-                                size="small"
-                              >
-                                <Minus size={16} />
-                              </IconButton>
-                              <span className="font-bold mx-1 w-4 text-center">
-                                {selections.addons[item.id] || 0}
-                              </span>
-                              <IconButton
-                                onClick={() => handleQuantityChange(item, 1)}
-                                size="small"
-                              >
-                                <Plus size={16} />
-                              </IconButton>
-                            </Box>
-                          </Box>
-                        </Card>
-                      ))}
+                        </Typography>
+                        {(category.data || []).map((item) => {
+                        if (category.title === "Música") {
+                            const isSelected = selections.musicIds.includes(item.id);
+                            return (
+                            <Card
+                                key={item.id}
+                                onClick={() => handleMusicSelection(item.id)}
+                                className={`p-2 mb-3 border rounded-lg flex items-center relative cursor-pointer transition-all duration-200 ${
+                                isSelected ? 'bg-green-100 border-green-500 scale-105' : 'border-amber-300'
+                                }`}
+                                style={{ boxShadow: isSelected ? '0 0 10px rgba(16, 185, 129, 0.5)' : 'none' }}
+                            >
+                                {isSelected && (
+                                <Box className="absolute top-1 right-1 bg-white rounded-full">
+                                    <CheckCircle className="text-green-600" size={24} />
+                                </Box>
+                                )}
+                                <Box className="flex-shrink-0 mr-3">
+                                <img src={bufferToDataUrl(item.image)} alt={item.name} className="w-16 h-16 object-contain rounded-md" />
+                                </Box>
+                                <Box className="flex-grow min-w-0">
+                                <Typography className="font-medium truncate" title={item.name}>
+                                    {item.name}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    ${item.price} MXN
+                                </Typography>
+                                </Box>
+                            </Card>
+                            );
+                        } else {
+                            return (
+                            <Card
+                                key={item.id}
+                                className="p-2 mb-3 border border-amber-300 rounded-lg flex items-center"
+                            >
+                                <Box className="flex-shrink-0 mr-3">
+                                <img src={bufferToDataUrl(item.image)} alt={item.name} className="w-16 h-16 object-contain rounded-md" />
+                                </Box>
+                                <Box className="flex-grow flex flex-col justify-between min-w-0">
+                                <Box className="min-w-0">
+                                    <Typography className="font-medium truncate" title={item.name}>
+                                    {item.name}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                    ${item.price} MXN
+                                    </Typography>
+                                </Box>
+                                <Box className="flex items-center self-end">
+                                    <IconButton onClick={() => handleQuantityChange(item, -1)} size="small">
+                                    <Minus size={16} />
+                                    </IconButton>
+                                    <span className="font-bold mx-1 w-4 text-center">
+                                    {selections.addons[item.id] || 0}
+                                    </span>
+                                    <IconButton onClick={() => handleQuantityChange(item, 1)} size="small">
+                                    <Plus size={16} />
+                                    </IconButton>
+                                </Box>
+                                </Box>
+                            </Card>
+                            );
+                        }
+                        })}
                     </Grid>
-                  ))}
+                    ))}
                 </Grid>
-              </CardContent>
-              <CardActions className="justify-between px-4 pb-4">
+                </CardContent>
+                <CardActions className="justify-between px-4 pb-4">
                 <Button onClick={handleBack}>Atrás</Button>
-                <Button
-                  variant="contained"
-                  onClick={handleNext}
-                  style={{ backgroundColor: "#A96E4A" }}
-                >
-                  Siguiente
+                <Button variant="contained" onClick={handleNext} style={{ backgroundColor: "#A96E4A" }}>
+                    Siguiente
                 </Button>
-              </CardActions>
+                </CardActions>
             </Card>
-          )}
+            )}
             {activeStep === 3 && (
                  <Card className="shadow-lg rounded-2xl">
                  <CardContent>
