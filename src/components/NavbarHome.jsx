@@ -28,13 +28,7 @@ const NavbarHome = ({
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
-            <a
-              href="#paquetes"
-              className="text-gray-950 hover:text-amber-950 transition-colors duration-300 font-medium"
-              onClick={() => handleNavClick("#paquetes")}
-            >
-              Paquetes
-            </a>
+            
             <a
               href="#contacto"
               className="text-gray-950 hover:text-amber-950 transition-colors duration-300 font-medium"

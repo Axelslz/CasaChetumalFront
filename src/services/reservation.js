@@ -35,5 +35,5 @@ export const updateReservationStatusRequest = (id, newStatus) => {
 };
 
 export const getOccupiedDatesRequest = () => {
-  return apiClient.get('/reservations/occupied-dates');
+  return apiClient.get('/reservations/occupied-dates'); 
 };

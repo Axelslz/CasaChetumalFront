@@ -12,8 +12,9 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 dayjs.locale("es");
 
-import { getReservationOptions as getOptions, calculateTotalRequest } from "../services/reservation.js";
+import { getReservationOptions as getOptions, calculateTotalRequest, getOccupiedDatesRequest } from "../services/reservation.js";
 import { useCart } from "../context/CartContext.jsx"; 
+
 
 const steps = ["Datos de reservación", "Paquetes", "Personalización", "Resumen"];
 
@@ -47,7 +48,7 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
  
   const [totalPrice, setTotalPrice] = useState(3000);
 
-   useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       const loadInitialData = async () => {
         try {
@@ -60,7 +61,8 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
           });
 
           const datesRes = await getOccupiedDatesRequest();
-          setOccupiedDates(datesRes.data); 
+          console.log("Fechas ocupadas recibidas del backend:", datesRes.data);
+          setOccupiedDates(datesRes.data || []); 
 
         } catch (error) { 
           console.error("Error al cargar datos iniciales del modal:", error); 
@@ -71,7 +73,6 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
   }, [isOpen]);
 
   useEffect(() => {
-   
     if (options.snacks.length === 0 && options.music.length === 0 && options.drinks.length === 0) {
       return;
     }
@@ -89,9 +90,7 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
       clearTimeout(handler);
     };
   }, [selections, options]); 
-  
-
-
+ 
   if (!isOpen) return null;
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
@@ -104,7 +103,8 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
     const end = new Date(start.getTime() + 7 * 60 * 60 * 1000);
     setFormData({ ...formData, fecha: date, horaInicio: start, horaFin: end });
   };
-  const isDateDisabled = (date) => occupiedDates.some((d) => dayjs(d).isSame(date, "day"));
+  
+   const isDateDisabled = (date) => occupiedDates.some((d) => dayjs(d.date).isSame(date, "day"));
 
   const handleQuantityChange = (item, delta, isPackage = false) => {
     if (isPackage) {
@@ -137,7 +137,7 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
     });
   };
 
-   const handleAddToCart = () => {
+  const handleAddToCart = () => {
     const { nombre, apellidos, telefono, fecha, ine } = formData;
     if (!nombre || !apellidos || !telefono || !fecha) {
       alert("Por favor, completa los campos requeridos del primer paso.");
@@ -166,15 +166,15 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
 
     selections.musicIds.forEach(id => dataToSend.append('musicIds', id));
 
-   const reservationSummary = {
-    cliente: `${nombre} ${apellidos}`,
-    fecha: dayjs(fecha).format('DD/MM/YYYY'),
-    hora: dayjs(formData.horaInicio).format('hh:mm A'),
-    total: totalPrice,
-    packageId: selections.packageId,
-    addons: selections.addons, 
-    musicIds: selections.musicIds,
-};
+    const reservationSummary = {
+      cliente: `${nombre} ${apellidos}`,
+      fecha: dayjs(fecha).format('DD/MM/YYYY'),
+      hora: dayjs(formData.horaInicio).format('hh:mm A'),
+      total: totalPrice,
+      packageId: selections.packageId,
+      addons: selections.addons, 
+      musicIds: selections.musicIds,
+    };
  
     addReservationToCart({ dataToSend, summary: reservationSummary, allOptions: options });
     
@@ -237,9 +237,40 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
                         onChange={handleDateChange} 
                         shouldDisableDate={isDateDisabled}
                         minTime={dayjs().hour(8).minute(0)}  
-                        maxTime={dayjs().hour(16).minute(0)} 
-                      />
-                    </LocalizationProvider>
+                        maxTime={dayjs().hour(16).minute(0)}
+                        disablePast
+                        slotProps={{
+                          toolbar: {
+                            toolbarTitle: (
+                              <Box marginY={1}>
+                                {/* Leyenda para días confirmados */}
+                                <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                                  <span style={{ width: 20, height: 20, borderRadius: "50%", backgroundColor: "#A96E4A", opacity: 0.7 }} ></span>
+                                    <Typography variant="body2" color="text.secondary">Ocupado </Typography>
+                                </Box>
+                                  {/* NUEVA leyenda para días pendientes */}
+                                <Box display="flex" alignItems="center" gap={1}>
+                                    <span style={{ width: 20, height: 20, borderRadius: "50%", backgroundColor: "#9E9E9E", opacity: 0.7 }} ></span>
+                                        <Typography variant="body2" color="text.secondary">Pendiente de Confirmar</Typography>
+                                </Box>
+                              </Box>
+                                  ),
+                                    },
+                                    day: (ownerState) => {
+                                      const dayInfo = occupiedDates.find((d) => dayjs(d.date).isSame(ownerState.day, "day"));        
+                                        let style = { borderRadius: "50%" };
+                                            if (dayInfo) {
+                                              if (dayInfo.status === 'confirmed') {
+                                                style = { ...style, backgroundColor: "#A96E4A !important", color: "white !important", opacity: 0.8 };
+                                              } else if (dayInfo.status === 'pending') {
+                                                style = { ...style, backgroundColor: "#9E9E9E !important", color: "white !important", opacity: 0.8 };
+                                                }
+                                              }  
+                                              return { sx: style };
+                                            },
+                                        }}
+                                    />
+                                </LocalizationProvider>
                     {formData.horaInicio && (<p className="mt-2 text-gray-600 text-lg">Inicio: {formData.horaInicio.toLocaleTimeString()} | Fin: {formData.horaFin.toLocaleTimeString()}</p>)}
                   </Box>
                 </CardContent>
@@ -366,21 +397,21 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
             </Card>
             )}
             {activeStep === 3 && (
-                 <Card className="shadow-lg rounded-2xl">
-                 <CardContent>
-                   <Typography variant="h6" className="mb-4 text-amber-900">Resumen de tu reservación</Typography>
-                   <ul className="list-disc ml-6 mb-1 text-gray-700">
-                     <li><b>Cliente:</b> {formData.nombre} {formData.apellidos}</li>
-                     <li><b>Teléfono:</b> {formData.telefono}</li>
-                     <li><b>Fecha:</b> {dayjs(formData.fecha).format('DD/MM/YYYY')} {dayjs(formData.horaInicio).format('hh:mm A')}</li>
-                   </ul>
-                   <Typography className="text-lg font-bold text-green-700 text-right">Total: ${totalPrice.toFixed(2)} MXN</Typography>
-                 </CardContent>
-                 <CardActions className="justify-between">
-                   <Button onClick={handleBack}>Atrás</Button>
-                   <Button variant="contained" color="success" onClick={handleAddToCart}>Confirmar y Enviar al Carrito</Button>
-                 </CardActions>
-               </Card>
+                <Card className="shadow-lg rounded-2xl">
+                <CardContent>
+                    <Typography variant="h6" className="mb-4 text-amber-900">Resumen de tu reservación</Typography>
+                    <ul className="list-disc ml-6 mb-1 text-gray-700">
+                        <li><b>Cliente:</b> {formData.nombre} {formData.apellidos}</li>
+                        <li><b>Teléfono:</b> {formData.telefono}</li>
+                        <li><b>Fecha:</b> {dayjs(formData.fecha).format('DD/MM/YYYY')} {dayjs(formData.horaInicio).format('hh:mm A')}</li>
+                    </ul>
+                    <Typography className="text-lg font-bold text-green-700 text-right">Total: ${totalPrice.toFixed(2)} MXN</Typography>
+                </CardContent>
+                <CardActions className="justify-between">
+                    <Button onClick={handleBack}>Atrás</Button>
+                    <Button variant="contained" color="success" onClick={handleAddToCart}>Confirmar y Enviar al Carrito</Button>
+                </CardActions>
+                </Card>
             )}
           </Box>
         </Box>

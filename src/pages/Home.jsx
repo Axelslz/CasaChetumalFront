@@ -20,6 +20,7 @@ import {
   Phone,
   PartyPopper,
   ShoppingCart,
+  Instagram, Facebook, Youtube
 } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx" 
 
@@ -162,10 +163,15 @@ const CasaChetumal = () => {
                   El espacio perfecto para tus eventos especiales, donde cada
                   momento se convierte en un recuerdo inolvidable
                 </p>
-                <button className="bg-gradient-to-r from-amber-900 to-orange-900 text-white px-6 md:px-8 py-3 md:py-4 rounded-full text-base md:text-lg font-semibold hover:from-amber-950 hover:to-orange-950 transform hover:scale-105 transition-all duration-300 shadow-xl">
+                <a
+                  href="https://maps.app.goo.gl/oRGLKwbPqJreNoRA9"
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-gradient-to-r from-amber-900 to-orange-900 text-white px-6 md:px-8 py-3 md:py-4 rounded-full text-base md:text-lg font-semibold hover:from-amber-950 hover:to-orange-950 transform hover:scale-105 transition-all duration-300 shadow-xl inline-block"
+                >
                   <MapPin className="inline-block mr-2" size={20} />
                   Ver Ubicación
-                </button>
+                </a>
               </div>
               <div className="absolute top-20 left-10 w-20 h-20 bg-amber-200 rounded-full opacity-20 animate-bounce"></div>
               <div className="absolute top-32 right-16 w-16 h-16 bg-orange-200 rounded-full opacity-30 animate-pulse"></div>
@@ -244,9 +250,9 @@ const CasaChetumal = () => {
                 </div>
                 <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
                   {[
-                    { icon: Users, title: "Capacidad", description: "Hasta 200 personas" },
+                    { icon: Users, title: "Capacidad", description: "Hasta 60 personas" },
                     { icon: Clock, title: "Disponibilidad", description: "7 días a la semana" },
-                    { icon: Sparkles, title: "Servicios", description: "Con variedades de paquetes" },
+                    { icon: Sparkles, title: "Servicios", description: "Con variedades de paquetes y mucho más" },
                   ].map((feature, index) => (
                     <div key={index} className="text-center group">
                       <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
@@ -310,7 +316,6 @@ const CasaChetumal = () => {
                 {[
                   { number: "500+", label: "Eventos Realizados", icon: PartyPopper },
                   { number: "98%", label: "Clientes Satisfechos", icon: Trophy },
-                  { number: "15", label: "Años de Experiencia", icon: Star },
                   { number: "24/7", label: "Soporte Disponible", icon: Phone },
                 ].map((stat, index) => (
                   <div key={index} className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 text-center transform hover:scale-105 transition-all duration-300 border border-white/30 shadow-lg hover:shadow-xl group">
@@ -332,29 +337,88 @@ const CasaChetumal = () => {
             `}</style>
           </section>
 
-          <section id="contacto" className="py-20 px-6 bg-gray-900 text-white">
-            <div className="container mx-auto text-center">
-              <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">¿Listo para crear momentos inolvidables?</h3>
-              <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">Reserva hoy y permítenos hacer de tu evento algo extraordinario</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <button className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 md:px-8 py-3 md:py-4 rounded-full text-base md:text-lg font-semibold hover:from-amber-900 hover:to-orange-900 transform hover:scale-105 transition-all duration-300 shadow-xl w-full sm:w-auto" onClick={handleReservationClick}>
-                  <ClipboardPlus className="inline-block mr-2" size={20} />
-                  Reservar ahora
-                </button>
-                <button className="border-2 border-amber-500 text-amber-500 px-6 md:px-8 py-3 md:py-4 rounded-full text-base md:text-lg font-semibold hover:bg-amber-900 hover:border-amber-900 hover:text-white transition-all duration-300 w-full sm:w-auto">
-                  <Mail className="inline-block mr-2" size={20} />
-                  Enviar Mensaje
-                </button>
+          <section id="contacto" className="bg-gray-900 text-white py-8 px-1">
+            <div className="container mx-auto max-w-4xl">
+              
+              {/* Título y Subtítulo */}
+              <div className="text-center mb-12">
+                <h2 className="text-4xl md:text-5xl font-bold mb-4">Ponte en Contacto con Nosotros</h2>
+                <p className="text-lg text-gray-400 max-w-3xl mx-auto">
+                  Estamos aquí para ayudarte a planificar tu evento perfecto.
+                </p>
+              </div>
+
+              {/* Contenedor Principal de Información */}
+              <div className="bg-gray-800 p-5 rounded-lg shadow-lg">
+                
+                {/* --- INFORMACIÓN DE CONTACTO ORDENADA --- */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+                  
+                  {/* Teléfono */}
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-gray-900 p-3 rounded-full">
+                      <Phone className="text-orange-500" size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-semibold">Teléfono</h4>
+                      <a href="tel:+529611234567" className="text-lg text-gray-300 hover:text-orange-400 transition-colors">
+                        961 123 4567
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="flex items-center space-x-2">
+                    <div className="bg-gray-900 p-3 rounded-full">
+                      <Mail className="text-orange-500" size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-semibold">Correo</h4>
+                      <a href="mailto:contacto@casachetumal.com" className="text-lg text-gray-300 hover:text-orange-400 transition-colors">
+                        contacto@casachetumal.com
+                      </a>
+                    </div>
+                  </div>
+                  
+                  {/* Horario */}
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-gray-900 p-3 rounded-full">
+                      <Clock className="text-orange-500" size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-semibold">Horario</h4>
+                      <p className="text-lg text-gray-300">Lun - Sáb: 9 AM - 5 PM</p>
+                    </div>
+                  </div>
+
+                </div>
+                
+                {/* --- DIVISOR Y REDES SOCIALES --- */}
+                <div className="border-t border-gray-700 pt-8 text-center">
+                    <h4 className="text-xl font-semibold mb-4">Síguenos en Nuestras Redes</h4>
+                    <div className="flex justify-center space-x-5">
+                        <a href="#" target="_blank" rel="noopener noreferrer" className="bg-gray-900 p-3 rounded-full hover:bg-orange-500 transition-colors transform hover:scale-110">
+                          <Facebook size={28}/>
+                        </a>
+                        <a href="#" target="_blank" rel="noopener noreferrer" className="bg-gray-900 p-3 rounded-full hover:bg-orange-500 transition-colors transform hover:scale-110">
+                          <Instagram size={28}/>
+                        </a>
+                        <a href="#" target="_blank" rel="noopener noreferrer" className="bg-gray-900 p-3 rounded-full hover:bg-orange-500 transition-colors transform hover:scale-110">
+                          <Youtube size={28}/>
+                        </a>
+                    </div>
+                </div>
+                
               </div>
             </div>
           </section>
 
           <div className="border-t border-dashed border-orange-300"></div>
 
-          <footer className="bg-gray-900 text-white py-12 px-6">
+          <footer className="bg-gray-900 text-white py-2 px-3">
             <div className="container mx-auto text-center">
               <div className="flex items-center justify-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-900 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-900 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">C</span>
                 </div>
                 <span className="text-2xl font-bold">Casa Chetumal</span>
