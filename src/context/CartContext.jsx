@@ -10,7 +10,6 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-
   const [pendingReservation, setPendingReservation] = useState(null);
 
   const addReservationToCart = (reservationData) => {
@@ -22,14 +21,18 @@ export const CartProvider = ({ children }) => {
   };
 
   const processPaymentAndCreateReservation = async () => {
-    if (!pendingReservation) throw new Error("No hay reservación en el carrito.");
+    if (!pendingReservation || !pendingReservation.createReservation) {
+      throw new Error("No hay una función de reservación válida en el carrito.");
+    }
+    
     try {
-      const response = await createReservationRequest(pendingReservation.dataToSend);
+      const response = await pendingReservation.createReservation(); 
+      
       alert("¡Reservación creada con éxito!");
       clearCart();
       return response;
     } catch (error) {
-      console.error("Error al procesar el pago:", error);
+      console.error("Error al procesar la reservación:", error);
       throw error;
     }
   };

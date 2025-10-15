@@ -106,8 +106,7 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
                     const item = packages.find(p => p.id === summary.packageId);
                     return item ? (<tr key={`pkg-${item.id}`} className="border-t"><td className="py-2">{item.name}</td><td className="text-center">1</td><td className="text-right">${item.price}</td></tr>) : null;
                   })()}
-                  
-                  {/* MODIFICACIÓN 3: Lógica corregida para iterar sobre 'addons' y buscar en la lista combinada */}
+                 
                   {summary.addons && Object.entries(summary.addons).map(([id, qty]) => {
                     const item = allAddons.find(addon => addon.id == id);
                     return item ? (
@@ -134,7 +133,6 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
           ) : ( <p>No hay información de la compra. Por favor, vuelve a iniciar el proceso.</p> )}
         </div>
         
-        {/* --- El resto del componente de pago (sin cambios) --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div onClick={() => setSelectedMethod("transfer")} className={`bg-white rounded-2xl shadow-xl p-6 cursor-pointer border-2 transition-all ${selectedMethod === "transfer" ? "border-amber-500 ring-4 ring-amber-200" : "border-transparent hover:border-amber-300"}`}>
             <div className="flex items-center mb-4">
