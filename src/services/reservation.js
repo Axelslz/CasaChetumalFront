@@ -26,6 +26,15 @@ export const getAllReservationsRequest = () => {
 };
 
 /**
+ * Obtiene los detalles completos de una reservación por su ID.
+ * @param {string} id
+ * @returns {Promise}
+ */
+export const getReservationByIdRequest = (id) => {
+  return apiClient.get(`/reservations/${id}`);
+};
+
+/**
  * Actualiza el estado de una reservación específica.
  * @param {string} id
  * @param {string} newStatus

@@ -35,7 +35,7 @@ const bufferToDataUrl = (buffer) => {
   return `data:image/png;base64,${base64String}`;
 };
 
-const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
+const ReservationModal = ({ isOpen, onClose, openCartModal, isAdmin = false, onReservationCreated }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { addReservationToCart } = useCart();
@@ -167,7 +167,7 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
     setMusicDetails(prev => ({ ...prev, notes: e.target.value }));
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     const { nombre, apellidos, telefono, fecha, ine } = formData;
     if (!nombre || !apellidos || !telefono || !fecha) {
       alert("Por favor, completa los campos requeridos del primer paso.");
@@ -199,8 +199,21 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
       dataToSend.append('musicSchedule', JSON.stringify(musicDetails.schedule));
       dataToSend.append('musicNotes', musicDetails.notes);
     }
-
-    const reservationSummary = {
+    if (isAdmin) {
+      try {
+        // MODO ADMIN: Crea la reserva directamente
+        await createReservationRequest(dataToSend);
+        alert("¡Reservación creada con éxito!");
+        if (onReservationCreated) {
+          onReservationCreated(); // Llama a la función para refrescar la lista
+        }
+        onClose(); // Cierra el modal
+      } catch (error) {
+        console.error("Error al crear la reservación desde admin:", error);
+        alert("Hubo un error al crear la reservación.");
+      }
+    } else {
+      const reservationSummary = {
       cliente: `${nombre} ${apellidos}`,
       fecha: dayjs(fecha).format('DD/MM/YYYY'),
       hora: dayjs(formData.horaInicio).format('hh:mm A'),
@@ -209,17 +222,18 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
       addons: selections.addons,
       musicIds: selections.musicIds,
       musicDetails: selections.musicIds.length > 0 ? musicDetails : null
-    };
-
-    addReservationToCart({
-      createReservation: () => createReservationRequest(dataToSend),
-      summary: reservationSummary,
-      allOptions: options
-    });
+      };
+    
+      addReservationToCart({
+        createReservation: () => createReservationRequest(dataToSend),
+        summary: reservationSummary,
+        allOptions: options
+      });
 
     alert("¡Reservación añadida al carrito!");
     onClose();      
     openCartModal(); 
+   }
   };
 
   return (
@@ -503,7 +517,7 @@ const ReservationModal = ({ isOpen, onClose, openCartModal }) => {
                 </CardContent>
                 <CardActions className="justify-between">
                   <Button onClick={handleBack}>Atrás</Button>
-                  <Button variant="contained" color="success" onClick={handleAddToCart}>Confirmar y Enviar al Carrito</Button>
+                  <Button variant="contained" color="success" onClick={handleAddToCart}> {isAdmin ? "Crear Reservación" : "Confirmar y Enviar al Carrito"}</Button>
                 </CardActions>
               </Card>
             )}

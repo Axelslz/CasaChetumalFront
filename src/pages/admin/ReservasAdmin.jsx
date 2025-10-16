@@ -1,38 +1,69 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Filter, Calendar, User, Package, Menu } from 'lucide-react';
+import { Eye, Calendar, User, Info } from 'lucide-react';
 import {
   getAllReservationsRequest,
   updateReservationStatusRequest,
+  getReservationByIdRequest,
 } from '../../services/reservation.js'; 
+import ReservationDetailsModal from '../../components/ReservationDetailsModal.jsx';
+import ReservationModal from '../../pages/Reservation.jsx'; // Importa el modal de creación
 
 const ReservasAdmin = () => {
   const [reservas, setReservas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Estados para el modal de detalles
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
+  // Estado para el modal de agregar reserva
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
-  const [activeFilter, setActiveFilter] = useState('Todos los estados');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Función para obtener las reservaciones
+  const fetchReservations = async () => {
+    try {
+      // No es necesario poner setLoading(true) aquí para evitar parpadeos al refrescar
+      const response = await getAllReservationsRequest();
+      setReservas(response.data);
+    } catch (err) {
+      setError('No se pudieron cargar las reservaciones.');
+    } finally {
+      setLoading(false); // Asegúrate de que loading se ponga en false
+    }
+  };
 
   useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        const response = await getAllReservationsRequest();
-        setReservas(response.data);
-      } catch (err) {
-        setError('No se pudieron cargar las reservaciones.');
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true); // Activa el loading solo en la carga inicial
     fetchReservations();
   }, []);
+
+  const handleOpenDetailsModal = async (id) => {
+    setModalLoading(true);
+    setIsDetailsModalOpen(true);
+    try {
+      const response = await getReservationByIdRequest(id);
+      setSelectedReservation(response.data);
+    } catch (err) {
+      alert("No se pudieron cargar los detalles de la reservación.");
+      setIsDetailsModalOpen(false);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedReservation(null);
+  };
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       await updateReservationStatusRequest(id, newStatus);
       setReservas((prevReservas) =>
         prevReservas.map((reserva) =>
-          reserva.id === id ? { ...reserva, estado: newStatus } : reserva
+          reserva.id === id ? { ...reserva, estado: newStatus, status: newStatus } : reserva
         )
       );
     } catch (error) {
@@ -78,7 +109,7 @@ const ReservasAdmin = () => {
       case 'paid':
         return <span className="text-gray-500 font-medium">Completado</span>;
       case 'cancelled':
-         return (
+        return (
           <button
             onClick={() => handleUpdateStatus(reserva.id, 'pending')}
             className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
@@ -91,8 +122,8 @@ const ReservasAdmin = () => {
     }
   };
 
-  if (loading) return <div className="p-8 font-semibold">Cargando reservaciones...</div>;
-  if (error) return <div className="p-8 text-red-600 font-semibold">{error}</div>;
+  if (loading) return <div className="p-8 font-semibold text-center">Cargando reservaciones...</div>;
+  if (error) return <div className="p-8 text-red-600 font-semibold text-center">{error}</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
@@ -101,7 +132,10 @@ const ReservasAdmin = () => {
           <h2 className="text-3xl lg:text-4xl font-bold text-amber-900">
             Administrar Reservas
           </h2>
-          <button className="w-full mt-4 sm:mt-0 sm:w-auto bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg transition-colors duration-200">
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="w-full mt-4 sm:mt-0 sm:w-auto bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg transition-colors duration-200"
+          >
             + Agregar Reserva
           </button>
         </div>
@@ -113,7 +147,7 @@ const ReservasAdmin = () => {
                 <tr className="bg-gray-50 border-b border-gray-200 text-left">
                   <th className="px-6 py-4 text-sm font-semibold text-gray-700"><User className="w-4 h-4 inline-block -mt-1 mr-2" />Cliente</th>
                   <th className="px-6 py-4 text-sm font-semibold text-gray-700"><Calendar className="w-4 h-4 inline-block -mt-1 mr-2" />Fecha del Evento</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-700"><Package className="w-4 h-4 inline-block -mt-1 mr-2" />Paquete</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-700"><Info className="w-4 h-4 inline-block -mt-1 mr-2" />Detalles</th>
                   <th className="px-6 py-4 text-sm font-semibold text-gray-700">Estado</th>
                   <th className="px-6 py-4 text-sm font-semibold text-gray-700">Acciones</th>
                 </tr>
@@ -124,7 +158,15 @@ const ReservasAdmin = () => {
                     <tr key={reserva.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 font-medium text-gray-900">{reserva.cliente}</td>
                       <td className="px-6 py-4 text-gray-600">{formatDate(reserva.fecha)}</td>
-                      <td className="px-6 py-4 text-gray-800">{reserva.paquete}</td>
+                      <td className="px-6 py-4">
+                        <button 
+                          onClick={() => handleOpenDetailsModal(reserva.id)}
+                          className="flex items-center text-blue-600 hover:text-blue-800 font-semibold text-sm"
+                        >
+                          <Eye size={16} className="mr-1" />
+                          Ver Detalles
+                        </button>
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`capitalize inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(reserva.estado)}`}>
                           {reserva.estado}
@@ -145,6 +187,23 @@ const ReservasAdmin = () => {
           </div>
         </div>
       </div>
+      
+      {/* Modal para ver detalles de una reservación */}
+      <ReservationDetailsModal 
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        reservation={modalLoading ? null : selectedReservation}
+      />
+
+      {/* Modal para agregar una nueva reservación */}
+      {isAddModalOpen && (
+        <ReservationModal 
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          isAdmin={true}
+          onReservationCreated={fetchReservations} 
+        />
+      )}
     </div>
   );
 };
