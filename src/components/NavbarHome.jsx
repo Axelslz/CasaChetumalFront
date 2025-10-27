@@ -1,6 +1,7 @@
 import React from "react";
 import { Menu, X, ClipboardPlus, ShoppingCart } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx";
+import miLogo from "../assets/img/logo.png";
 
 const NavbarHome = ({
   isMobileMenuOpen,
@@ -17,7 +18,7 @@ const NavbarHome = ({
           {/* Logo */}
           <div className="flex items-center space-x-3">
             <div className="w-13 h-13 mr-1 bg-gradient-to-br from-amber-900 to-orange-950 rounded-full flex items-center justify-center">
-              <img src="../src/assets/img/logo.png" alt="logo" className="w-full max-h-28 object-cover rounded-lg" />
+              <img src={miLogo} alt="logo" className="w-full max-h-28 object-cover rounded-lg" />
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-900 to-orange-950 bg-clip-text text-transparent">
@@ -78,13 +79,6 @@ const NavbarHome = ({
         >
           <div className="py-4 border-t border-amber-300">
             <div className="flex flex-col space-y-4">
-              <a
-                href="#paquetes"
-                className="text-gray-950 hover:text-amber-950 transition-colors duration-300 font-medium py-2 px-4 hover:bg-amber-100 rounded-lg"
-                onClick={() => handleNavClick("#paquetes")}
-              >
-                Paquetes
-              </a>
               <a
                 href="#contacto"
                 className="text-gray-950 hover:text-amber-950 transition-colors duration-300 font-medium py-2 px-4 hover:bg-amber-100 rounded-lg"

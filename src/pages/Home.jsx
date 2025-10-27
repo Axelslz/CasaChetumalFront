@@ -21,12 +21,10 @@ import {
   Phone,
   PartyPopper,
   ShoppingCart,
-  Instagram,
-  Facebook,
-  Youtube,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { FaFacebook, FaInstagram, FaWhatsapp } from 'react-icons/fa';
 import { useCart } from "../context/CartContext.jsx";
 
 const terminosContent = (
@@ -98,7 +96,7 @@ const terminosContent = (
         en:
       </p>
       <p>
-        <strong>Correo electrónico:</strong> casachetumal@gmail.com
+        <strong>Correo electrónico:</strong> casachetumal92@gmail.com
       </p>
       <p>
         <strong>Teléfono:</strong> 961-255-2540
@@ -168,7 +166,7 @@ const terminosContent = (
         proporcionado.
       </p>
       <p>
-        <strong>Correo electrónico:</strong> casachetumal@gmail.com
+        <strong>Correo electrónico:</strong> casachetumal92@gmail.com
       </p>
     </>
   );
@@ -217,18 +215,16 @@ const terminosContent = (
       <h3>4. Contacto</h3>
       <p>Si tienes preguntas sobre nuestro uso de cookies, contáctanos:</p>
       <p>
-        <strong>Correo electrónico:</strong> casachetumal@gmail.com
+        <strong>Correo electrónico:</strong> casachetumal92@gmail.com
       </p>
     </>
 );
 
 const CasaChetumal = () => {
-  // --- CAMBIOS AQUÍ ---
+
   const [galleryImages, setGalleryImages] = useState([]);
   const [currentImage, setCurrentImage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  // --- FIN DE CAMBIOS ---
-
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -244,12 +240,10 @@ const CasaChetumal = () => {
 
   const { pendingReservation, clearCart } = useCart();
 
-  // --- NUEVO USEEFFECT PARA CARGAR IMÁGENES ---
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        // Asegúrate de que esta URL coincida con tu endpoint del backend
-        const response = await fetch('http://localhost:3000/api/carousel-images');
+        const response = await fetch('https://casachetumalback.onrender.com/api/carousel-images');
         if (!response.ok) {
           throw new Error('La respuesta de la red no fue exitosa');
         }
@@ -264,7 +258,7 @@ const CasaChetumal = () => {
 
     fetchImages();
   }, []);
-  // --- FIN DE NUEVO USEEFFECT ---
+ 
 
   const openInfoModal = (title, content) => {
     setInfoModalState({ isOpen: true, title, content });
@@ -300,7 +294,6 @@ const CasaChetumal = () => {
     navigate("/");
   };
 
-  // --- LÓGICA DEL CARRUSEL ACTUALIZADA ---
   const handlePrevClick = () => {
     if (galleryImages.length === 0) return;
     setCurrentImage(
@@ -312,7 +305,6 @@ const CasaChetumal = () => {
     if (galleryImages.length === 0) return;
     setCurrentImage((prev) => (prev + 1) % galleryImages.length);
   };
-  // --- FIN DE LÓGICA ---
 
   const handleReservationClick = () => {
     setShowReservationModal(true);
@@ -337,7 +329,6 @@ const CasaChetumal = () => {
     }
   };
 
-  // --- USEEFFECT DEL SLIDESHOW AUTOMÁTICO ACTUALIZADO ---
   useEffect(() => {
     if (galleryImages.length > 0) {
       const interval = setInterval(() => {
@@ -345,8 +336,7 @@ const CasaChetumal = () => {
       }, 5000);
       return () => clearInterval(interval);
     }
-  }, [galleryImages.length]); // Se activa cuando las imágenes cargan
-  // --- FIN DE ACTUALIZACIÓN ---
+  }, [galleryImages.length]); 
 
   useEffect(() => {
     const handleResize = () => {
@@ -437,7 +427,6 @@ const CasaChetumal = () => {
                 </p>
               </div>
               <div className="max-w-5xl mx-auto">
-                {/* --- RENDERIZADO CONDICIONAL DEL CARRUSEL --- */}
                 {isLoading ? (
                   <div className="aspect-video flex items-center justify-center bg-gray-200 rounded-3xl">
                     <p className="text-gray-500">Cargando imágenes...</p>
@@ -498,7 +487,6 @@ const CasaChetumal = () => {
                     <p className="text-red-500">No se pudieron cargar las imágenes del carrusel.</p>
                   </div>
                 )}
-                {/* --- FIN DE RENDERIZADO CONDICIONAL --- */}
                 
                 <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
                   {[
@@ -533,8 +521,6 @@ const CasaChetumal = () => {
               </div>
             </div>
           </section>
-
-          {/* ... El resto de tu código sigue igual ... */}
 
           <section
             id="paquetes"
@@ -703,7 +689,7 @@ const CasaChetumal = () => {
                         href="tel:+529611234567"
                         className="text-lg text-gray-300 hover:text-orange-400 transition-colors"
                       >
-                        961 123 4567
+                        961 255 2540
                       </a>
                     </div>
                   </div>
@@ -742,29 +728,34 @@ const CasaChetumal = () => {
                     Síguenos en Nuestras Redes
                   </h4>
                   <div className="flex justify-center space-x-5">
+                    {/* Link de Facebook */}
                     <a
-                      href="#"
+                      href="https://www.facebook.com/share/16ZZFNTVrW/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gray-900 p-3 rounded-full hover:bg-orange-500 transition-colors transform hover:scale-110"
                     >
-                      <Facebook size={28} />
+                      <FaFacebook size={28} /> 
                     </a>
+                    
+                    {/* Link de Instagram */}
                     <a
-                      href="#"
+                      href="https://www.instagram.com/casachetumalterraza?igsh=MXA5MHRjZTFvbDBjdA=="
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gray-900 p-3 rounded-full hover:bg-orange-500 transition-colors transform hover:scale-110"
                     >
-                      <Instagram size={28} />
+                      <FaInstagram size={28} /> 
                     </a>
+                    
+                    {/* Link de WhatsApp */}
                     <a
-                      href="#"
+                      href="https://api.whatsapp.com/send?phone=5219612552540&text=Hola%20me%20gustaria%20saber%20mas%20informacion%20del%20salon%20por%20favor"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gray-900 p-3 rounded-full hover:bg-orange-500 transition-colors transform hover:scale-110"
                     >
-                      <Youtube size={28} />
+                      <FaWhatsapp size={28} />
                     </a>
                   </div>
                 </div>
@@ -839,3 +830,16 @@ const CasaChetumal = () => {
 };
 
 export default CasaChetumal;
+
+
+//50 cucharas $77
+//50 tenedores $77
+//60 charolas $120
+//10 vasos rojos $45  50 $250
+//20 vasos termicos $194
+
+
+
+//Coca-cola 3L 53 
+//agua mineral 3L 30 
+//pepsi 3L 60

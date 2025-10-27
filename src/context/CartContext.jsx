@@ -20,15 +20,30 @@ export const CartProvider = ({ children }) => {
     setPendingReservation(null);
   };
 
-  const processPaymentAndCreateReservation = async () => {
-    if (!pendingReservation || !pendingReservation.createReservation) {
-      throw new Error("No hay una función de reservación válida en el carrito.");
+  const processPaymentAndCreateReservation = async (paymentData) => {
+    
+    if (!pendingReservation || !pendingReservation.dataToSend) {
+      throw new Error("No hay reservación pendiente o dataToSend no existe.");
+    }
+    
+    const finalData = pendingReservation.dataToSend; 
+  
+    const fullName = `${paymentData.firstName} ${paymentData.lastName}`;
+    finalData.set('clientName', fullName); 
+    
+    finalData.append('paymentMethod', paymentData.method);
+    
+    if (paymentData.method === 'transfer' && paymentData.receipt) {
+      finalData.append('receipt', paymentData.receipt, paymentData.receipt.name); 
+    }
+    
+    if (paymentData.method === 'cash' && paymentData.cashPaymentDateTime) {
+      finalData.append('cashPaymentDateTime', paymentData.cashPaymentDateTime); 
     }
     
     try {
-      const response = await pendingReservation.createReservation(); 
+      const response = await createReservationRequest(finalData); 
       
-      alert("¡Reservación creada con éxito!");
       clearCart();
       return response;
     } catch (error) {
