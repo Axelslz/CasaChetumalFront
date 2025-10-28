@@ -15,7 +15,8 @@ import { getReservationOptions as getOptions, calculateTotalRequest, getOccupied
 import { useCart } from "../context/CartContext.jsx";
 
 const minTimeForPicker = dayjs('2022-01-01T08:00');
-const maxTimeForPicker = dayjs('2022-01-01T16:00');  
+const maxTimeForPicker = dayjs('2022-01-01T16:00');
+const SALON_BASE_PRICE = 3250;  
 
 const baseSteps = ["Datos de reservación", "Paquetes", "Personalización"];
 const packageDetailStep = "Detalles del Paquete";
@@ -204,23 +205,16 @@ const ReservationModal = ({ isOpen, onClose, openCartModal, isAdmin = false, onR
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (options.snacks.length === 0) {
+ useEffect(() => {
+    if (!options || options.snacks.length === 0) { 
       return;
     }
     const handler = setTimeout(async () => {
       try {
-        const addonsToSend = {};
-        for (const key in selections.addons) {
-          const parts = key.split('_');
-          if (parts.length === 2) { 
-            const id = parts[1];
-            addonsToSend[id] = selections.addons[key];
-          }
-        }
         const response = await calculateTotalRequest({
-          ...selections,
-          addons: addonsToSend 
+           packageId: selections.packageId,
+           addons: selections.addons, 
+           musicIds: selections.musicIds
         });
         setTotalPrice(response.data.total);
       } catch (error) {
@@ -228,7 +222,7 @@ const ReservationModal = ({ isOpen, onClose, openCartModal, isAdmin = false, onR
       }
     }, 500);
     return () => clearTimeout(handler);
-  }, [selections, options]); 
+  }, [selections, options]);
 
   useEffect(() => {
     if (currentPackage) {
@@ -427,7 +421,7 @@ const ReservationModal = ({ isOpen, onClose, openCartModal, isAdmin = false, onR
       };
 
       addReservationToCart({
-        createReservation: () => dataToSend,
+        getBaseFormData: () => dataToSend,
         summary: reservationSummary,
         allOptions: options
       });
