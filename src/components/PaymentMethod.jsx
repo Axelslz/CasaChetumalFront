@@ -245,7 +245,28 @@ const PaymentMethod = ({ onBack, onSuccess }) => {
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
               <div className="p-4 md:p-6 bg-amber-50">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Información para transferencia</h3>
-                {/* ... (Datos de transferencia) ... */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-amber-500">
+                  <h4 className="font-semibold text-gray-800 mb-3">Datos para transferencia:</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-medium">Banco:</span> BBVA Bancomer</p>
+                    <p><span className="font-medium">Titular:</span>  Fernando Morales</p>
+                    <p><span className="font-medium">Número de cuenta:</span> 4152314436497245</p>
+                    
+                  </div>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex">
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800 mb-2">Instrucciones importantes:</h3>
+                      <div className="text-xs text-blue-700 space-y-1">
+                        <p>• Concepto: "Dia Evento - Nombre del que reservo"</p>
+                        <p>• Sube foto clara del comprobante</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input type="text" placeholder="Nombre(s) completos *" value={formData.firstName} onChange={(e) => handleInputChange("firstName", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
                   <input type="text" placeholder="Apellidos *" value={formData.lastName} onChange={(e) => handleInputChange("lastName", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />

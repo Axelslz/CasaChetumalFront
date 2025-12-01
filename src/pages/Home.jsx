@@ -243,7 +243,7 @@ const CasaChetumal = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await fetch('https://casachetumalback.onrender.com/api/carousel-images');
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/carousel-images`);
         if (!response.ok) {
           throw new Error('La respuesta de la red no fue exitosa');
         }
@@ -357,7 +357,7 @@ const CasaChetumal = () => {
           onSuccess={handlePaymentSuccess}
         />
       ) : (
-        <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+        <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 overflow-x-hidden">
           <NavbarHome
             isMobileMenuOpen={isMobileMenuOpen}
             toggleMobileMenu={toggleMobileMenu}
@@ -409,63 +409,64 @@ const CasaChetumal = () => {
           </section>
 
           <section className="py-20 px-6 bg-white/50 backdrop-blur-sm relative overflow-hidden">
-            <div className="absolute top-10 left-10 w-40 h-40 bg-gradient-to-br from-amber-200/20 to-orange-200/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-20 right-16 w-32 h-32 bg-gradient-to-tl from-yellow-200/30 to-orange-300/30 rounded-full blur-2xl animate-bounce"></div>
-            <div className="container mx-auto relative z-10">
-              <div className="text-center mb-16">
-                <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-4">
-                  Descubre Nuestro Espacio
-                </h3>
-                <div className="flex justify-center items-center space-x-2 mb-6">
-                  <div className="w-8 h-1 bg-gradient-to-r from-transparent to-amber-400 rounded-full"></div>
-                  <div className="w-16 h-1 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"></div>
-                  <div className="w-8 h-1 bg-gradient-to-r from-orange-500 to-transparent rounded-full"></div>
-                </div>
-                <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                  Un recorrido por nuestras instalaciones diseñadas para hacer
-                  de tu evento una experiencia única
-                </p>
+        <div className="absolute top-10 left-10 w-40 h-40 bg-gradient-to-br from-amber-200/20 to-orange-200/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-16 w-32 h-32 bg-gradient-to-tl from-yellow-200/30 to-orange-300/30 rounded-full blur-2xl animate-bounce"></div>
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-4">
+              Descubre Nuestro Espacio
+            </h3>
+            <div className="flex justify-center items-center space-x-2 mb-6">
+              <div className="w-8 h-1 bg-gradient-to-r from-transparent to-amber-400 rounded-full"></div>
+              <div className="w-16 h-1 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"></div>
+              <div className="w-8 h-1 bg-gradient-to-r from-orange-500 to-transparent rounded-full"></div>
+            </div>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              Un recorrido por nuestras instalaciones diseñadas para hacer de tu
+              evento una experiencia única
+            </p>
+          </div>
+          <div className="max-w-5xl mx-auto">
+            {isLoading ? (
+              <div className="aspect-video flex items-center justify-center bg-gray-200 rounded-3xl">
+                <p className="text-gray-500">Cargando imágenes...</p>
               </div>
-              <div className="max-w-5xl mx-auto">
-                {isLoading ? (
-                  <div className="aspect-video flex items-center justify-center bg-gray-200 rounded-3xl">
-                    <p className="text-gray-500">Cargando imágenes...</p>
-                  </div>
-                ) : galleryImages.length > 0 ? (
-                  <div className="relative group transform transition-all duration-700 hover:scale-[1.02]">
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-100 to-orange-100 aspect-video shadow-2xl">
-                      <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
-                      <div className="absolute inset-1 bg-white rounded-3xl overflow-hidden">
-                        <img
-                          src={galleryImages[currentImage].imageUrl}
-                          alt={galleryImages[currentImage].title}
-                          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent group-hover:from-black/40 transition-all duration-500"></div>
+            ) : galleryImages.length > 0 ? (
+              <div className="relative group transform transition-all duration-700 hover:scale-[1.02]">
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-100 to-orange-100 aspect-video shadow-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
+                  <div className="absolute inset-1 bg-white rounded-3xl overflow-hidden">
+                    <img
+                      src={galleryImages[currentImage].imageUrl}
+                      alt={galleryImages[currentImage].title}
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent group-hover:from-black/40 transition-all duration-500"></div>
 
-                        <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
-                          <h4 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                            {galleryImages[currentImage].title}
-                          </h4>
-                          <p className="text-gray-200 text-base md:text-lg leading-relaxed max-w-2xl">
-                            {galleryImages[currentImage].description}
-                          </p>
-                          <div className="flex items-center mt-4 space-x-2">
-                            <div className="flex space-x-1">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className="w-5 h-5 text-amber-400 fill-current"
-                                />
-                              ))}
-                            </div>
-                            <span className="text-white/80 text-sm">
-                              Calificación excepcional
-                            </span>
-                          </div>
+                    {/* --- 💡 AQUÍ ESTÁN LOS CAMBIOS --- */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+                      <h4 className="text-lg md:text-3xl font-bold text-white mb-1 md:mb-2">
+                        {galleryImages[currentImage].title}
+                      </h4>
+                      <p className="text-xs md:text-lg text-gray-200 leading-relaxed max-w-2xl">
+                        {galleryImages[currentImage].description}
+                      </p>
+                      <div className="flex items-center mt-2 md:mt-4 space-x-1 md:space-x-2">
+                        <div className="flex space-x-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className="w-4 h-4 md:w-5 md:h-5 text-amber-400 fill-current"
+                            />
+                          ))}
                         </div>
+                        <span className="text-white/80 text-xs md:text-sm">
+                          Calificación excepcional
+                        </span>
                       </div>
                     </div>
+                    </div>
+                  </div>
 
                     <button
                       onClick={handlePrevClick}
@@ -649,21 +650,7 @@ const CasaChetumal = () => {
                 ))}
               </div>
             </div>
-            <style jsx>{`
-              @keyframes fade-in-up {
-                from {
-                  opacity: 0;
-                  transform: translateY(30px);
-                }
-                to {
-                  opacity: 1;
-                  transform: translateY(0);
-                }
-              }
-              .animate-fade-in-up {
-                animation: fade-in-up 0.8s ease-out forwards;
-              }
-            `}</style>
+            
           </section>
 
           <section id="contacto" className="bg-gray-900 text-white py-8 px-1">

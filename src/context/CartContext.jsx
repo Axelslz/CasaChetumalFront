@@ -57,12 +57,10 @@ export const CartProvider = ({ children }) => {
           console.log("No se encontraron addons válidos para añadir."); 
       }
 
-      console.log("FormData final a enviar:", Object.fromEntries(finalData.entries())); // Verifica que 'addons' esté aquí
+      console.log("FormData final a enviar:", Object.fromEntries(finalData.entries())); 
 
-      // 3. Llamar a la API
       const response = await createReservationRequest(finalData);
 
-      // 4. Limpiar y retornar
       clearCart();
       return response;
 
